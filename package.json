@@ -1,0 +1,20 @@
+{
+  "name": "my-chat-server",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "Anzor Thamokov",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "dev": "npx nodemon server.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "mongoose": "^9.6.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
