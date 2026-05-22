@@ -30,6 +30,8 @@ router.post("/new-message", authMiddleware, async (req, res) => {
     }
 });
 
+// TODO
+// Добавить проверку по user._id
 router.get("/get-all-messages/:chatId", authMiddleware, async (req, res) => {
     try {
         const allMessages = await Message.find({

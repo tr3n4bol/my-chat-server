@@ -1,5 +1,8 @@
 const mongoose = require("mongoose");
 
+
+// TODO
+// Валидация полей (john smith -> John Smith)
 const userSchema = new mongoose.Schema(
     {
         firstName: {
