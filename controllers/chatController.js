@@ -89,4 +89,30 @@ router.get("/get-all-chats", authMiddleware, async (req, res) => {
     }
 });
 
+router.post("/clean-unread-messages", authMiddleware, async (req, res) => {
+    try {
+        const chatId = req.body.chatId;
+        const chat = await Chat.findById(chatId);
+        if (!chat) {
+            res.status(400).send({
+                message: "No chat found with given chatId",
+                success: false,
+            });
+        }
+
+        const updatedChat = Chat.findByIdAndUpdate(
+            chatId,
+            { unreadMessageCount: 0 },
+            { new: true },
+        )
+            .populate("members")
+            .populate("lastMessage");
+    } catch (error) {
+        res.status(400).send({
+            message: error.message,
+            success: false,
+        });
+    }
+});
+
 module.exports = router;
