@@ -7,7 +7,7 @@ const messageRouter = require("./controllers/messageController");
 const { METHODS } = require("http");
 const message = require("./models/message");
 
-app.use(express.json());
+app.use(express.json({ limit: "50mb" }));
 
 const server = require("http").createServer(app);
 const io = require("socket.io")(server, {
@@ -16,6 +16,8 @@ const io = require("socket.io")(server, {
         METHODS: ["GET", "POST"],
     },
 });
+
+const onlineUsers = [];
 
 app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
@@ -45,6 +47,21 @@ io.on("connection", (socket) => {
 
     socket.on("typing", (data) => {
         io.to(data.members[0]).to(data.members[1]).emit("started-typing", data);
+    });
+
+
+    // TODO
+    // Fix online users
+    socket.on("user-login", (userId) => {
+        if (!onlineUsers.includes(userId)) {
+            onlineUsers.push(userId);
+        }
+        socket.emit("online-users", onlineUsers);
+    });
+
+    socket.on("user-logout", (userId) => {
+        onlineUsers.splice(onlineUsers.indexOf(userId), 1);
+        io.emit("online-users-updated", onlineUsers);
     });
 });
 
