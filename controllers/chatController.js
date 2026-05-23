@@ -1,5 +1,6 @@
 const router = require("express").Router();
 const User = require("../models/user");
+const Message = require("../models/message");
 const Chat = require("../models/chat");
 const authMiddleware = require("../middlewares/authMiddleware");
 
@@ -91,24 +92,50 @@ router.get("/get-all-chats", authMiddleware, async (req, res) => {
 
 router.post("/clean-unread-messages", authMiddleware, async (req, res) => {
     try {
-        const chatId = req.body.chatId;
+        const { chatId } = req.body;
+
         const chat = await Chat.findById(chatId);
+
         if (!chat) {
-            res.status(400).send({
-                message: "No chat found with given chatId",
+            return res.status(404).send({
+                message: "No Chat found with given chat ID.",
                 success: false,
             });
         }
 
-        const updatedChat = Chat.findByIdAndUpdate(
+        const updatedChat = await Chat.findByIdAndUpdate(
             chatId,
-            { unreadMessageCount: 0 },
-            { new: true },
+            {
+                unreadMessageCount: 0,
+            },
+            {
+                new: true,
+                timestamps: false,
+            },
         )
             .populate("members")
             .populate("lastMessage");
+
+        await Message.updateMany(
+            {
+                chatId,
+                sender: { $ne: req.userId },
+                read: false,
+            },
+            {
+                $set: {
+                    read: true,
+                },
+            },
+        );
+
+        return res.status(200).send({
+            message: "Unread messages cleared successfully",
+            success: true,
+            data: updatedChat,
+        });
     } catch (error) {
-        res.status(400).send({
+        return res.status(400).send({
             message: error.message,
             success: false,
         });
