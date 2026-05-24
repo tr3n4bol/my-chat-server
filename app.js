@@ -1,5 +1,6 @@
 const express = require("express");
 const app = express();
+const cors = require("cors");
 const authRouter = require("./controllers/authController");
 const userRouter = require("./controllers/userController");
 const chatRouter = require("./controllers/chatController");
@@ -7,6 +8,20 @@ const messageRouter = require("./controllers/messageController");
 const message = require("./models/message");
 
 app.use(express.json({ limit: "50mb" }));
+
+const allowedOrigins = [
+    "http://localhost:3000",
+    "https://chachat-8ytl.onrender.com",
+];
+
+app.use(
+    cors({
+        origin: allowedOrigins,
+        methods: ["GET", "POST"],
+        allowedHeaders: ["Content-Type", "Authorization"],
+        credentials: true,
+    }),
+);
 
 const server = require("http").createServer(app);
 const io = require("socket.io")(server, {
