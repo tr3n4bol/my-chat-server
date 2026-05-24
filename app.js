@@ -4,7 +4,6 @@ const authRouter = require("./controllers/authController");
 const userRouter = require("./controllers/userController");
 const chatRouter = require("./controllers/chatController");
 const messageRouter = require("./controllers/messageController");
-const { METHODS } = require("http");
 const message = require("./models/message");
 
 app.use(express.json({ limit: "50mb" }));
@@ -13,7 +12,7 @@ const server = require("http").createServer(app);
 const io = require("socket.io")(server, {
     cors: {
         origin: "http://localhost:3000",
-        METHODS: ["GET", "POST"],
+        methods: ["GET", "POST"],
     },
 });
 
@@ -23,6 +22,12 @@ app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/message", messageRouter);
+
+app.use(express.static(path.join(__dirname, "client/build")));
+
+app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "client/build", "index.html"));
+});
 
 io.on("connection", (socket) => {
     socket.on("join-room", (userId) => {
@@ -48,7 +53,6 @@ io.on("connection", (socket) => {
     socket.on("typing", (data) => {
         io.to(data.members[0]).to(data.members[1]).emit("started-typing", data);
     });
-
 
     // TODO
     // Fix online users
