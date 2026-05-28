@@ -34,7 +34,15 @@ const io = require("socket.io")(server, {
     },
 });
 
-const onlineUsers = [];
+const onlineUsers = new Map();
+
+const getOnlineUserIds = () => {
+    return Array.from(onlineUsers.keys());
+};
+
+const emitOnlineUsers = () => {
+    io.emit("online-users-updated", getOnlineUserIds());
+};
 
 app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
@@ -44,6 +52,35 @@ app.use("/api/message", messageRouter);
 io.on("connection", (socket) => {
     socket.on("join-room", (userId) => {
         socket.join(userId);
+    });
+
+    socket.on("user-login", (userId) => {
+        if (!userId) return;
+
+        if (!onlineUsers.has(userId)) {
+            onlineUsers.set(userId, new Set());
+        }
+
+        onlineUsers.get(userId).add(socket.id);
+        socket.data.userId = userId;
+
+        emitOnlineUsers();
+    });
+
+    socket.on("user-logout", (userId) => {
+        if (!userId) return;
+
+        const userSockets = onlineUsers.get(userId);
+
+        if (userSockets) {
+            userSockets.delete(socket.id);
+
+            if (userSockets.size === 0) {
+                onlineUsers.delete(userId);
+            }
+        }
+
+        emitOnlineUsers();
     });
 
     socket.on("send-message", (data) => {
@@ -66,18 +103,24 @@ io.on("connection", (socket) => {
         io.to(data.members[0]).to(data.members[1]).emit("started-typing", data);
     });
 
-    // TODO
-    // Fix online users
-    socket.on("user-login", (userId) => {
-        if (!onlineUsers.includes(userId)) {
-            onlineUsers.push(userId);
-        }
-        socket.emit("online-users", onlineUsers);
-    });
+    socket.on("disconnect", () => {
+        const userId = socket.data.userId;
 
-    socket.on("user-logout", (userId) => {
-        onlineUsers.splice(onlineUsers.indexOf(userId), 1);
-        io.emit("online-users-updated", onlineUsers);
+        if (!userId) {
+            return;
+        }
+
+        const userSockets = onlineUsers.get(userId);
+
+        if (userSockets) {
+            userSockets.delete(socket.id);
+
+            if (userSockets.size === 0) {
+                onlineUsers.delete(userId);
+            }
+        }
+
+        emitOnlineUsers();
     });
 });
 
